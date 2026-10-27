@@ -1738,11 +1738,11 @@ tbody td{padding:12px 16px;vertical-align:middle;font-size:12px;color:var(--ink)
           </span>
         </button>
 
-        <button class="adcard" data-route="#/admin/bom-licensing" data-desc="BOM Scope — the products that get a BOM, one licence each">
+        <button class="adcard" data-route="#/admin/bom-licensing" data-desc="BOM Scope — the applications that get a BOM">
           <span class="adcicon"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3.5" y="8" width="11" height="7.5" rx="1.8"/><path d="M6.3 8V5.9a2.7 2.7 0 015.4 0V8"/></svg></span>
           <span class="adctext">
             <span class="t">BOM Scope</span>
-            <span class="d">Add the products that get a BOM — by Agent or Ingest, one licence each. Start here.</span>
+            <span class="d">Add the applications that get a BOM — by Endpoint or Ingest. Start here.</span>
           </span>
         </button>
 
@@ -1754,11 +1754,11 @@ tbody td{padding:12px 16px;vertical-align:middle;font-size:12px;color:var(--ink)
           </span>
         </button>
 
-        <button class="adcard" data-route="#/admin/bom-retention" data-desc="BOM Retention — how many living-BOM versions survive, and for how long">
+        <button class="adcard" data-route="#/admin/bom-retention" data-desc="BOM Retention — how many BOM versions are kept">
           <span class="adcicon"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.2 3v12M9 3v12M12.8 3v12"/><circle cx="5.2" cy="6.2" r="1.7" fill="#fff"/><circle cx="9" cy="11" r="1.7" fill="#fff"/><circle cx="12.8" cy="7.6" r="1.7" fill="#fff"/></svg></span>
           <span class="adctext">
             <span class="t">BOM Retention</span>
-            <span class="d">How many living-SBOM versions to keep per CI, and for how long.</span>
+            <span class="d">How many BOM versions to keep per application.</span>
           </span>
         </button>
       </div>
@@ -1811,7 +1811,7 @@ tbody td{padding:12px 16px;vertical-align:middle;font-size:12px;color:var(--ink)
     <div class="head">
       <div>
         <h1>BOM Retention</h1>
-        <div class="sub">How long BOM versions are kept — a default policy, and rules for selected applications.</div>
+        <div class="sub">How many BOM versions are kept — a default policy, and rules for selected applications.</div>
       </div>
       <!-- Same pattern as the Scheduler: creating belongs to the page, the table
            below manages what already exists. -->
@@ -1885,7 +1885,7 @@ tbody td{padding:12px 16px;vertical-align:middle;font-size:12px;color:var(--ink)
     <div class="head">
       <div>
         <h1>BOM Scope</h1>
-        <div class="sub">Applications that get a BOM — each one uses one BOM licence.</div>
+        <div class="sub">Applications that get a BOM.</div>
       </div>
       <!-- One CTA for the page: decide to add enrolment first, choose how second.
            The tabs are a way to READ the estate; adding is not tab-scoped, so the
@@ -3108,8 +3108,7 @@ function bpUsers(id){
   BS_POLICIES.forEach(p=>{ if(p.policyId===id) out.push({cap:"bs", mod:"Scheduler", name:p.name, on:p.on,
     value:`${bsTrigger(p)} · ${bsClock(p)}`, what:`${bsTrigger(p)} · ${bsClock(p)}`}); });
   RT_RULES.forEach(r=>{ if(r.policyId===id) out.push({cap:"rt", mod:"Retention", name:r.name, on:r.on,
-    value:`${r.keep} / ${r.period === "Never delete" ? "never deleted" : r.period}`,
-    what:`Keep ${r.keep} · ${r.period === "Never delete" ? "never deleted" : `delete after ${r.period.toLowerCase()}`}`}); });
+    value:r.keep, what:`Keep ${r.keep}`}); });
   return out;
 }
 const bpMods = users => [...new Set(users.map(u=>u.mod))];
@@ -3243,7 +3242,7 @@ function allBpClashes(){
   return out;
 }
 
-let RT_DEFAULT = {keep:"10 versions", period:"90 days"};
+let RT_DEFAULT = {keep:"10 versions", period:"Never delete"};   /* count only — no age limit */
 /* The pending edit to the default policy, or null when there is none. This one
    control does not apply on change: it governs every enrolled CI, so it commits
    deliberately and RT_DEFAULT stays the truth until Save. */
@@ -3263,7 +3262,7 @@ const rtAfter = r => r.period === "Never delete" ? "Never" : r.period;
 const rtFilters = () => {
   const all = [rtDefRow(), ...RT_RULES];
   const col = (g, get) => [...new Set(all.map(get))].map(v=>({g, id:`${g}:${v}`, lab:v, fn:r=>get(r)===v}));
-  return [...col("Versions to Keep", r=>r.keep), ...col("Delete After", rtAfter)];
+  return [...col("Versions to Keep", r=>r.keep)];
 };
 /* The Default Policy is the first row of the list: out of the box, never deleted, always on, and
    it holds every application that no enabled rule holds. An application is on ONE rule or on the
@@ -3282,11 +3281,11 @@ let RT_DEF_EDIT = false;
 /* Retention rules target APPLICATIONS, picked by hand — Agent and Ingest alike (an ingested SBOM
    also keeps versions). An application not on an enabled rule follows the default policy. */
 let RT_RULES = [
-  {id:"RR-1", name:"Payment switch — short history", keep:"5 versions", period:"30 days",
+  {id:"RR-1", name:"Payment switch — short history", keep:"5 versions", period:"Never delete",
    on:true, apps:["APS-004"]},
-  {id:"RR-2", name:"Core banking — audit history", keep:"20 versions", period:"1 year",
+  {id:"RR-2", name:"Core banking — audit history", keep:"20 versions", period:"Never delete",
    on:true, apps:["APS-001","APS-002"]},
-  {id:"RR-3", name:"Vendor SBOMs", keep:"15 versions", period:"60 days",
+  {id:"RR-3", name:"Vendor SBOMs", keep:"15 versions", period:"Never delete",
    on:true, apps:["APS-006","APS-008"]}
 ];
 let RT_COV = null;    // rule whose applications drawer is open
@@ -4010,7 +4009,7 @@ function rtCardLine(keep, period){
 }
 /* An exception that matches the default is a no-op. Worth naming, because the drawer
    seeds exactly those values — so every new rule starts in that state. */
-const rtSameAsDefault = d => d.keep === RT_DEFAULT.keep && d.period === RT_DEFAULT.period;
+const rtSameAsDefault = d => d.keep === RT_DEFAULT.keep;
 function rtNote(keep, period){
   const noCap = keep === "All versions", noAge = period === "Never delete";
   if(noCap && noAge) return "Nothing is ever deleted.";
@@ -4072,14 +4071,14 @@ function renderRetention(){
   const shown = [rtDefRow(), ...RT_RULES].filter(r =>
     [...new Set(rtFilters().filter(f=>RT_FILT.has(f.id)).map(f=>f.g))].every(g =>
       rtFilters().some(f=>f.g===g && RT_FILT.has(f.id) && f.fn(r))) &&
-    (!rq || [r.name, r.keep, rtAfter(r)].some(v=>String(v).toLowerCase().includes(rq))));
+    (!rq || [r.name, r.keep].some(v=>String(v).toLowerCase().includes(rq))));
 
   wrap.innerHTML = !shown.length ? `<div class="estate">
       <div class="t">No rule matches these filters.</div>
       <div class="cta"><button class="btn" id="rtClr">Clear filters</button></div></div>`
   : RT_RULES.length ? `<div class="sc-scroll"><table class="sc-table">
     <thead><tr>
-      <th style="width:26%">Rule</th><th>Applications</th><th>Versions to Keep</th><th>Delete After</th>
+      <th style="width:26%">Rule</th><th>Applications</th><th>Versions to Keep</th>
       <th style="width:90px">Actions</th>
     </tr></thead>
     <tbody>${shown.map(r=>{
@@ -4087,7 +4086,6 @@ function renderRetention(){
         <td><div class="sc-name">${esc(r.name)}</div></td>
         <td><button class="sc-cov" data-rtdef="1" title="Edit default policy">${fmt(rtDefApps().length)}</button></td>
         <td><div class="sc-trig">${esc(r.keep)}</div></td>
-        <td><div class="sc-trig">${esc(rtAfter(r))}</div></td>
         <td><div class="sc-acts">
           <button class="ricon" data-rtdef="1" title="Edit" aria-label="Edit default policy"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10.6 2.9l2.5 2.5-7.6 7.6-3.1.6.6-3.1z"/><path d="M9.3 4.2l2.5 2.5"/></svg></button>
           <span style="width:28px;height:28px;display:inline-block"></span>
@@ -4097,7 +4095,6 @@ function renderRetention(){
         <td><div class="sc-name">${esc(r.name)}</div></td>
         <td><button class="sc-cov" data-edit="${r.id}" title="Edit rule">${fmt(n)}</button></td>
         <td><div class="sc-trig">${esc(r.keep)}</div></td>
-        <td><div class="sc-trig">${esc(rtAfter(r))}</div></td>
         <td><div class="sc-acts">
           <button class="ricon" data-edit="${r.id}" title="Edit" aria-label="Edit ${esc(r.name)}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10.6 2.9l2.5 2.5-7.6 7.6-3.1.6.6-3.1z"/><path d="M9.3 4.2l2.5 2.5"/></svg></button>
           <button class="ricon del" data-del="${r.id}" title="Delete" aria-label="Delete ${esc(r.name)}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.8 4.4h10.4M6.4 4.4V3.2a1 1 0 011-1h1.2a1 1 0 011 1v1.2M4.2 4.4l.6 8a1.2 1.2 0 001.2 1.1h4a1.2 1.2 0 001.2-1.1l.6-8"/></svg></button>
@@ -4148,8 +4145,8 @@ function renderRetention(){
   document.getElementById("rtRefresh").onclick = ()=>{ RT_FOPEN = false; renderRetention(); toast("BOM Retention refreshed"); };
   /* Download exports the rules on screen — filter and search applied. */
   document.getElementById("rtDownload").onclick = ()=>{
-    const head = ["Rule","Applications","Versions to Keep","Delete After"];
-    const rows = shown.map(r=>[r.name, r.isDefault ? rtDefApps().length : rtTargets(r).size, r.keep, rtAfter(r)]);
+    const head = ["Rule","Applications","Versions to Keep"];
+    const rows = shown.map(r=>[r.name, r.isDefault ? rtDefApps().length : rtTargets(r).size, r.keep]);
     const csv = [head, ...rows].map(a=>a.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     const a = document.createElement("a"); a.href = url; a.download = "bom-retention.csv"; a.click(); URL.revokeObjectURL(url);
@@ -4668,8 +4665,7 @@ function renderDefaultCis(){
     <aside class="dw in" style="width:${DW_W+140}px;max-width:95vw" role="dialog" aria-modal="true" aria-label="Applications on the default policy">
       <div class="dw-head"><div><h3>Applications on the default policy</h3></div>
         <button class="x" id="rtDcClose" aria-label="Close">${IC_X}</button></div>
-      <div class="dw-cap"><b>${rows.length}</b> of ${all.length} application${all.length===1?"":"s"} · keep ${esc(D.keep)}, ${
-        D.period==="Never delete" ? "never deleted" : `delete after ${esc(D.period.toLowerCase())}`}</div>
+      <div class="dw-cap"><b>${rows.length}</b> of ${all.length} application${all.length===1?"":"s"} · keep ${esc(D.keep)}</div>
       <div class="dw-body" style="padding:0">
         ${bsAppHead()}
         ${rows.length ? rows.map(a=>`<div class="pk-row" style="grid-template-columns:${BS_APP_COLS};cursor:default">${bsAppCells(a)}</div>`).join("")
@@ -4699,7 +4695,7 @@ function renderAffected(){
             <span class="id">${esc(a.id)}</span><span style="font-weight:500">${esc(a.name)}</span>
             <span>${laSrcPill(a.source)}</span><span><b style="font-weight:600">${esc(bsEp(a))}</b></span>
             <span>${esc(r.name)}</span>
-            <span>${esc(r.keep)} · ${r.period==="Never delete"?"never deleted":`after ${esc(r.period.toLowerCase())}`}</span></div>`).join("")
+            <span>${esc(r.keep)}</span></div>`).join("")
           : `<div class="pk-empty">No application is on a retention rule.</div>`}
       </div>
       <div class="dw-foot"><span class="gap"></span><button class="btn lg" id="rtADone">Close</button></div>
@@ -4719,7 +4715,7 @@ function renderRtCov(){
     <aside class="dw in" style="width:${DW_W+140}px;max-width:95vw" role="dialog" aria-modal="true" aria-label="Applications on rule">
       <div class="dw-head"><div><h3>Applications</h3></div>
         <button class="x" id="rtCClose" aria-label="Close">${IC_X}</button></div>
-      <div class="dw-cap">${esc(r?r.name:"")} · <b>${rows.length}</b> application${rows.length===1?"":"s"} · ${r?`keep ${esc(r.keep)}, ${r.period==="Never delete"?"never deleted":`delete after ${esc(r.period.toLowerCase())}`}`:""}</div>
+      <div class="dw-cap">${esc(r?r.name:"")} · <b>${rows.length}</b> application${rows.length===1?"":"s"} · ${r?`keep ${esc(r.keep)}`:""}</div>
       <div class="dw-body" style="padding:0">
         ${bsAppHead()}
         ${rows.length ? rows.map(a=>`<div class="pk-row" style="grid-template-columns:${BS_APP_COLS};cursor:default">${bsAppCells(a)}</div>`).join("")
@@ -4760,7 +4756,6 @@ function renderDefEditor(){
         <div class="sechead">Retention policy</div>
         <div class="polgrid">
           <div class="fld"><span class="flab">Keep the latest</span>${ddHTML("defKeep", dr.keep, KEEP_OPTS, "full")}</div>
-          <div class="fld"><span class="flab">Delete versions older than</span>${ddHTML("defPeriod", dr.period, PERIOD_OPTS, "full")}</div>
         </div>
         <hr class="dw-div">
         <div class="sechead" style="display:flex;align-items:center;justify-content:space-between">
@@ -4782,13 +4777,13 @@ function renderDefEditor(){
   const close = ()=>{ RT_DEF_EDIT=false; RT_DEF_DRAFT=null; RT_APICK=null; DD_OPEN=null; host.innerHTML=""; renderRetention(); };
   ["rtDClose","rtDCancel","rtDScrim"].forEach(id=>{ const el=document.getElementById(id); if(el) el.onclick=()=>{ if(id==="rtDScrim" && RT_APICK) return; close(); }; });
   document.getElementById("rtDSave").onclick = ()=>{
-    RT_DEFAULT.keep = dr.keep; RT_DEFAULT.period = dr.period;
+    RT_DEFAULT.keep = dr.keep;
     /* Moving an application to the default takes it off the rule it was on. */
     const moved = dr.add.length;
     if(moved) RT_RULES = RT_RULES.map(r=>({...r, apps:(r.apps||[]).filter(a=>!dr.add.includes(a))}));
     close();
     toast(`Default Policy saved${moved ? ` · ${moved} moved from another rule` : ""}`);
-    bomAudit("Default Policy Updated", `Default Policy is updated With Versions to Keep as ${RT_DEFAULT.keep}, Delete After as ${rtAfter(RT_DEFAULT)}${moved?`, ${moved} application${moved===1?"":"s"} moved from another rule`:""}.`);
+    bomAudit("Default Policy Updated", `Default Policy is updated With Versions to Keep as ${RT_DEFAULT.keep}${moved?`, ${moved} application${moved===1?"":"s"} moved from another rule`:""}.`);
   };
   document.getElementById("rtDPick").onclick = ()=>{
     RT_APICK = {sel:[...defIds, ...dr.add], lock:new Set(defIds)}; RT_PQ = ""; renderDefEditor(); };
@@ -4893,7 +4888,7 @@ function renderModal(){
         ${d.err && !d.name.trim() ? `<div class="ferr">Give the rule a name so it can be recognised later.</div>` : ""}
       </div>
 
-      <div class="sechead">Retention policy ${secInfo("Whichever limit is reached first applies — a version is deleted when it falls outside the count OR outside the age, not both.")}</div>
+      <div class="sechead">Retention policy ${secInfo("Older versions beyond this count are deleted. The current version is never deleted.")}</div>
       <!-- Two labelled fields of equal width. The old version read as one sentence with
            the selects embedded in it, which hid that these are the two things to set.
            The "default" tag rides on the FIELD, so the comparison the deleted sentence made
@@ -4902,10 +4897,6 @@ function renderModal(){
         <div class="fld">
           <span class="flab">Keep the latest${d.keep === RT_DEFAULT.keep ? ` <span class="fdef">default</span>` : ""}</span>
           ${ddHTML("mKeep", d.keep, KEEP_OPTS, "full")}
-        </div>
-        <div class="fld">
-          <span class="flab">Delete versions older than${d.period === RT_DEFAULT.period ? ` <span class="fdef">default</span>` : ""}</span>
-          ${ddHTML("mPeriod", d.period, PERIOD_OPTS, "full")}
         </div>
       </div>
       <!-- Only on a save attempt. The mechanic moved to the ⓘ above and the default values
@@ -5016,7 +5007,7 @@ function renderModal(){
     rtClose();
     toast(`${d.editing?"Saved":"Created"} "${rule.name}" — ${n} application${n===1?"":"s"}${moved?` · ${moved} moved from another rule`:""}`);
     bomAudit(d.editing ? "Retention Rule Updated" : "Retention Rule Created",
-      `Retention Rule ${rule.name} is ${d.editing?"updated":"Created"} With Versions to Keep as ${rule.keep}, Delete After as ${rtAfter(rule)}, Applications as ${n}${moved?` (${moved} moved from another rule)`:""}.`);
+      `Retention Rule ${rule.name} is ${d.editing?"updated":"Created"} With Versions to Keep as ${rule.keep}, Applications as ${n}${moved?` (${moved} moved from another rule)`:""}.`);
   };
 
   /* Focus the name once on open — not on every re-render, or ticking a
@@ -5378,9 +5369,8 @@ function bsRunNow(p){
 }
 
 const BS_FILTERS = [
-  {g:"Status",  id:"active",  lab:"Active",  fn:p=>p.on},
-  {g:"Status",  id:"paused",  lab:"Disabled",fn:p=>!p.on},
-  ...BS_TYPES.map(t=>({g:"Schedule Type", id:t, lab:t, fn:p=>bsType(p)===t}))
+  {g:"Status",  id:"active",  lab:"Enabled", fn:p=>p.on},
+  {g:"Status",  id:"paused",  lab:"Disabled",fn:p=>!p.on}
 ];
 /* Filters within a group are alternatives (OR); across groups they
    narrow (AND) — otherwise ticking Active + Daily would return nothing. */
@@ -6303,6 +6293,7 @@ const segBtn = (k, cls, inner, extra) =>
    from the same ENROLLED_CIS snapshot in one pass, so 6 = 5 + 1 and 6 = 4 + 1 + 1
    always close — there is no second query to disagree with the first. */
 function licCardsHTML(){
+  return "";
   const total = LIC_SEATS, used = licUsed(), left = Math.max(0, LIC_SEATS - used);
 
   /* Percentages, not counts, so the thresholds hold from an 8-seat demo to a
@@ -7609,9 +7600,8 @@ function renderPolicyDrawer(){
         ${capCardHTML(d, "rt", `
           <div class="polstack">
             <div class="polline">Keep the latest ${ddHTML("bpKeep", d.caps.rt.keep, KEEP_OPTS, 168)}</div>
-            <div class="polline">or delete versions older than ${ddHTML("bpPeriod", d.caps.rt.period, PERIOD_OPTS, 150)}</div>
           </div>
-          <div class="polrow-note">${rtNote(d.caps.rt.keep, d.caps.rt.period)}</div>`)}
+`)}
         <div class="rt-note" style="margin-top:-4px">A policy may switch on one, two or all three — none of them is required.
           Whatever is on becomes an ordinary rule in that module, editable there too.</div>
 
@@ -7774,7 +7764,7 @@ const capsOn = d => CAPS_ORDER.filter(c=>d.caps[c].on);
 const capDraftPhrase = (d, cap) =>
   cap === "lic" ? "Auto-enrol"
 : cap === "bs"  ? `${bsTrigger(d.caps.bs)} · ${bsClock(d.caps.bs)}`
-:                 `${d.caps.rt.keep} / ${d.caps.rt.period === "Never delete" ? "never deleted" : d.caps.rt.period}`;
+:                 d.caps.rt.keep;
 const CAP_VERB = {lic:"Auto-enrol matching CIs", bs:"Generate BOMs on a schedule",
                   rt:"Keep BOM versions for a set time"};
 function capCardHTML(d, cap, body){
@@ -7862,9 +7852,9 @@ let BOM_AUDIT = [
   {at:auAgo(1,16,5),  event:"Retention Rule Updated", user:"Neha Raje",     ip:"10.20.41.136", summary:"Retention Rule Core banking — audit history is updated. Versions to Keep changed from 15 versions to 20 versions."},
   {at:auAgo(1,11,20), event:"Application Updated",    user:"Vikram Sethi",  ip:"10.20.40.181", summary:"Application APS-002 Finacle Core Banking is updated. Version changed from 10.2.24 to 10.2.25."},
   {at:auAgo(2,15,48), event:"Schedule Updated",       user:"Imran Qureshi", ip:"172.16.14.111", summary:"Schedule Weekly — treasury is updated. Applications changed from 2 to 1."},
-  {at:auAgo(3,9,12),  event:"Default Policy Updated", user:"Priya Nair",    ip:"10.20.40.161", summary:"Default Policy is updated. Versions to Keep changed from 5 versions to 10 versions, Delete After changed from 30 days to 90 days."},
+  {at:auAgo(3,9,12),  event:"Default Policy Updated", user:"Priya Nair",    ip:"10.20.40.161", summary:"Default Policy is updated. Versions to Keep changed from 5 versions to 10 versions."},
   {at:auAgo(4,14,30), event:"Application Removed",    user:"Priya Nair",    ip:"10.20.40.161", summary:"Application APS-009 Core Lending Engine has been removed from BOM Scope. All of its BOM data has been deleted."},
-  {at:auAgo(4,12,2),  event:"Retention Rule Created", user:"Neha Raje",     ip:"10.20.41.136", summary:"Retention Rule Vendor SBOMs is Created With Versions to Keep as 15 versions, Delete After as 60 days, Applications as 2."},
+  {at:auAgo(4,12,2),  event:"Retention Rule Created", user:"Neha Raje",     ip:"10.20.41.136", summary:"Retention Rule Vendor SBOMs is Created With Versions to Keep as 15 versions, Applications as 2."},
   {at:auAgo(5,13,7),  event:"Application Added",      user:"Vikram Sethi",  ip:"10.20.40.181", summary:"Application APS-005 Murex MX.3 Treasury is Added With BOM Source as Endpoint, Endpoint as EP-4, Scan Path as /opt/murex/mx3, Manufacturer as Murex."},
   {at:auAgo(5,10,55), event:"Schedule Created",       user:"Imran Qureshi", ip:"172.16.14.111", summary:"Schedule Nightly — core banking is Created With Schedule Type as Daily, Time as 02:00, Applications as 3."}
 ];
@@ -8062,7 +8052,6 @@ document.addEventListener("click", e=>{ if(LA_MENU && !(e.target.closest && e.ta
 
 function laOpenAdd(mode){
   if(!LA_STORE){ toast("Open BOM Management from ServiceOps Admin to add an application"); return; }
-  if(laSeats().left <= 0){ toast(`All ${laSeats().total} BOM licences are in use — remove an application to free one`); return; }
   LA_STORE.openAdd(mode);
 }
 /* ⓘ beside "Application": an application is a name of its own; linking it to a CMDB Application
@@ -8078,13 +8067,7 @@ const laRoot = p => { const t = String(p||"").trim(); return t === "/" || /^[A-Z
 const laSrcLab = s => s === "Agent" ? "Endpoint" : "Ingest";
 const laSrc = s => `<span class="src" style="${s === "Agent" ? "background:#EFF6FC;color:#2F6FA8" : "background:#F3ECFB;color:#6941C6"};white-space:nowrap">${laSrcLab(s)}</span>`;
 
-function laCardsHTML(){
-  const st = laSeats();
-  const tone = st.left <= 0 ? "crit" : (st.left / st.total) <= 0.25 ? "warn" : "";
-  const tip = st.left <= 0 ? "All BOM licences are in use — remove an application to free one"
-    : `${st.left} of ${st.total} BOM licences available`;
-  return `Total BOM Licences : <b class="${tone}" title="${esc(tip)}">${st.used}/${st.total}</b>`;
-}
+function laCardsHTML(){ return ""; }   /* BOM licensing is out of this phase — no seat count on the page. */
 
 /* Predefined filters — the search bar's filter dropdown. */
 const LA_FILTERS = [
@@ -8138,11 +8121,10 @@ function renderLicensing(){
   document.getElementById("licWrap").innerHTML = !all.length
     ? `<div class="estate"><span class="ic">${IC_SEAT}</span>
         <div class="t">No application is in BOM scope.</div>
-        <div class="d">Nothing is scanned or ingested — all ${laSeats().total} licences are free.</div>
+        <div class="d">Nothing is scanned or ingested yet.</div>
         <div class="cta"><button class="btn pri lg" data-laadd="agent">Add Application</button></div></div>`
     : !list.length
     ? `<div class="estate"><div class="t">No application matches these filters.</div>
-        <div class="d">That is a filter result, not an all-clear — ${all.length} application${all.length===1?"":"s"} hold a licence.</div>
         <div class="cta"><button class="btn" id="laClr">Clear filters</button></div></div>`
     : `<div class="sc-scroll"><table class="sc-table wide">
       <thead><tr><th>ID</th><th>Application</th><th>BOM Source</th><th>Scan Path</th><th>Endpoint</th><th>CI</th><th>Manufacturer</th><th>Created Date</th><th>Last Updated Date</th><th style="width:150px">Actions</th></tr></thead>
@@ -8220,7 +8202,7 @@ function laWire(){
   document.querySelectorAll("[data-larmyes]").forEach(b=>b.onclick=e=>{ e.stopPropagation();
     const id = b.dataset.larmyes, row = laList().find(r=>r.id===id); LA_CONFIRM = null;
     if(LA_STORE) LA_STORE.remove(id); else { const i = LA_FALLBACK.findIndex(r=>r.id===id); if(i>=0) LA_FALLBACK.splice(i,1); renderLicensing(); }
-    toast(`${row ? row.name : id} removed — ${laSeats().left} licence${laSeats().left===1?"":"s"} available`); });
+    toast(`${row ? row.name : id} removed`); });
   document.querySelectorAll(".confirm").forEach(c=>c.onclick=e=>e.stopPropagation());
 }
 document.addEventListener("click", ()=>{ if(LA_CONFIRM){ LA_CONFIRM = null; renderLicensing(); } });
