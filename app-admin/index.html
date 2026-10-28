@@ -5437,7 +5437,7 @@ function renderScheduler(){
     wrap.innerHTML = `<div class="sc-scroll"><table class="sc-table">
       <thead><tr>
         <th style="width:26%">Policy</th><th>Applications</th><th>Trigger</th>
-        <th>Next Run</th><th style="width:90px">Status</th><th style="width:110px">Actions</th>
+        <th>Next Run</th><th style="width:130px">Execution Status</th><th style="width:90px">Status</th><th style="width:110px">Actions</th>
       </tr></thead>
       <tbody>${list.map(p=>{
         const n = bsNext(p);
@@ -5456,6 +5456,7 @@ function renderScheduler(){
             ? `<div class="sc-when">${bsWhen(n)}</div><div class="sc-sub">${bsClock(p)}</div>`
             : `<div class="sc-when" style="color:var(--faint)">${DASH}</div><div class="sc-sub">${BS_ENABLED?"Paused":"Scheduling off"}</div>`}
             ${done ? `<div class="sc-sub">Last run ${bsClockOf(done.finishedAt)}</div>` : ""}</td>
+          <td><div class="sc-when">${run ? "Running" : "Idle"}</div></td>
           <td>${toggleHTML("data-bstoggle", p.id, p.on, p.name)}</td>
           <td><div class="sc-acts">
             ${run
@@ -5483,9 +5484,9 @@ function renderScheduler(){
   document.getElementById("bsRefresh").onclick = ()=>{ BS_FOPEN = false; renderScheduler(); toast("BOM Scheduler refreshed"); };
   /* Download exports the policies on screen — filter and search applied. */
   document.getElementById("bsDownload").onclick = ()=>{
-    const head = ["Policy","Applications","Trigger","Time","Next Run","Status"];
+    const head = ["Policy","Applications","Trigger","Time","Next Run","Execution Status","Status"];
     const rows = bsVisible().map(p=>{ const n = bsNext(p);
-      return [p.name, bsCis(p).length, bsTrigger(p), bsClock(p), n ? bsWhen(n) : "", p.on ? "Enabled" : "Disabled"]; });
+      return [p.name, bsCis(p).length, bsTrigger(p), bsClock(p), n ? bsWhen(n) : "", bsRunning(p.id) ? "Running" : "Idle", p.on ? "Enabled" : "Disabled"]; });
     const csv = [head, ...rows].map(a=>a.map(v=>`"${String(v).replace(/<[^>]*>/g,"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     const a = document.createElement("a"); a.href = url; a.download = "bom-scheduler.csv"; a.click(); URL.revokeObjectURL(url);
